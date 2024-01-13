@@ -18,26 +18,40 @@ namespace Edison365TechnicalTest.Controllers
         [HttpGet]
         public IEnumerable<Author> GetAuthors()
         {
-            return _context.Authors.ToList();
+            try
+            {
+                return _context.Authors.ToList();
+            }
+            catch
+            {
+                return Enumerable.Empty<Author>();
+            }
         }
 
         [HttpPost]
         public async Task<ActionResult<Author>> CreateAuthor(string firsName, string lastName)
         {
-            if (firsName == null || lastName == null)
+            try
             {
-                return BadRequest("Invalid author data");
+                if (firsName == null || lastName == null)
+                {
+                    return BadRequest("Invalid author data");
+                }
+
+                var newAuthor = new Author()
+                {
+                    FirstName = firsName,
+                    LastName = lastName
+                };
+                _context.Authors.Add(newAuthor);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetAuthors), new { id = newAuthor.ID }, newAuthor);
             }
-
-            var newAuthor = new Author()
+            catch (Exception ex)
             {
-                FirstName = firsName,
-                LastName = lastName
-            };
-            _context.Authors.Add(newAuthor);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetAuthors), new { id = newAuthor.ID }, newAuthor);
+                return BadRequest(ex.Message);
+            }
         }
     }
 }

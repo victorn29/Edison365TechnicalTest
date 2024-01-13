@@ -22,24 +22,38 @@ namespace Edison365TechnicalTest.Controllers
         [EnableQuery(AllowedQueryOptions = AllowedQueryOptions.All, MaxExpansionDepth = 2)]
         public IQueryable<Book> GetBooks()
         {
-            return _context.Books
-                    .Include(b => b.BookAuthors)
-                    .ThenInclude(ba => ba.Author);
+            try
+            {
+                return _context.Books
+                        .Include(b => b.BookAuthors)
+                        .ThenInclude(ba => ba.Author);
+            }
+            catch
+            {
+                return Enumerable.Empty<Book>().AsQueryable();
+            }
         }
 
         [HttpPost]
         public async Task<ActionResult<Book>> CreateBook(string bookName)
         {
-            if (bookName == null)
+            try
             {
-                return BadRequest("Invalid book data");
+                if (bookName == null)
+                {
+                    return BadRequest("Invalid book data");
+                }
+
+                var newBook = new Book() { Name = bookName };
+                var result = _context.Books.Add(newBook);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetBooks), new { id = newBook.ID }, newBook);
             }
-
-            var newBook = new Book() { Name = bookName };
-            var result = _context.Books.Add(newBook);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetBooks), new { id = newBook.ID }, newBook);
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
     }
 }
